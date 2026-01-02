@@ -78,6 +78,8 @@ export async function POST(request) {
 try {
   console.log('🔵 [ADMIN] Iniciando envío de email al admin')
   console.log('🔵 [ADMIN] Email destino:', process.env.ADMIN_EMAIL)
+  console.log('🔵 [ADMIN] RESEND_API_KEY existe:', !!process.env.RESEND_API_KEY)
+  console.log('🔵 [ADMIN] SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL)
   
   const adminEmailHtml = generateAdminEmail({
     company_name,
@@ -94,7 +96,12 @@ try {
 
   console.log('🔵 [ADMIN] HTML generado, enviando...')
 
-  const adminResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/send-email`, {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const emailUrl = `${siteUrl}/api/send-email`
+  
+  console.log('🔵 [ADMIN] URL completa:', emailUrl)
+
+  const adminResponse = await fetch(emailUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -105,8 +112,27 @@ try {
     })
   })
 
-  const adminResult = await adminResponse.json()
-  console.log('🔵 [ADMIN] Respuesta:', adminResult)
+  console.log('🔵 [ADMIN] Response status:', adminResponse.status)
+  console.log('🔵 [ADMIN] Response ok:', adminResponse.ok)
+  console.log('🔵 [ADMIN] Response headers:', JSON.stringify(Object.fromEntries(adminResponse.headers)))
+
+  const responseText = await adminResponse.text()
+  console.log('🔵 [ADMIN] Response text (primeros 500 chars):', responseText.substring(0, 500))
+
+  if (!responseText || responseText.trim() === '') {
+    console.error('❌ [ADMIN] Respuesta vacía del servidor')
+    throw new Error('Empty response from email service')
+  }
+
+  let adminResult
+  try {
+    adminResult = JSON.parse(responseText)
+    console.log('🔵 [ADMIN] Respuesta parseada:', adminResult)
+  } catch (parseError) {
+    console.error('❌ [ADMIN] No se pudo parsear JSON:', responseText)
+    console.error('❌ [ADMIN] Parse error:', parseError.message)
+    throw new Error(`Invalid JSON response from email service: ${responseText.substring(0, 100)}`)
+  }
 
 } catch (emailError) {
   console.error('❌ [ADMIN] Error completo:', emailError.message)
