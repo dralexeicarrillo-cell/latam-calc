@@ -1,0 +1,30 @@
+{
+  "name": "latam-health-calculator",
+  "version": "1.0.0",
+  "description": "Calculadora de entrada al mercado de salud en América Latina",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.89.0",
+    "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.4",
+    "lucide-react": "^0.562.0",
+    "next": "^14.2.35",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "resend": "^3.5.0"
+  },
+  "keywords": [
+    "healthtech",
+    "latam",
+    "market-entry",
+    "calculator"
+  ],
+  "author": "Clinix",
+  "license": "MIT"
+}
