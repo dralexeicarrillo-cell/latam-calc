@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(request) {
   try {
@@ -75,94 +78,69 @@ export async function POST(request) {
     }
 
     // 📧 ENVIAR EMAIL AL ADMIN (a ti)
-try {
-  console.log('🔵 [ADMIN] Iniciando envío de email al admin')
-  console.log('🔵 [ADMIN] Email destino:', process.env.ADMIN_EMAIL)
-  console.log('🔵 [ADMIN] RESEND_API_KEY existe:', !!process.env.RESEND_API_KEY)
-  console.log('🔵 [ADMIN] SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL)
-  
-  const adminEmailHtml = generateAdminEmail({
-    company_name,
-    contact_name,
-    contact_phone,
-    company_email,
-    contact_position,
-    company_website: company_website || '',
-    total_score,
-    selected_markets: selected_markets || [],
-    assessment_id: data.id,
-    scores
-  })
+    try {
+      console.log('🔵 [ADMIN] Iniciando envío de email al admin')
+      console.log('🔵 [ADMIN] Email destino:', process.env.ADMIN_EMAIL || 'gerencia@nhealths.com')
+      
+      const adminEmailHtml = generateAdminEmail({
+        company_name,
+        contact_name,
+        contact_phone,
+        company_email,
+        contact_position,
+        company_website: company_website || '',
+        total_score,
+        selected_markets: selected_markets || [],
+        assessment_id: data.id,
+        scores
+      })
 
-  console.log('🔵 [ADMIN] HTML generado, enviando...')
+      const fromEmail = process.env.FROM_EMAIL || 'NexusHealth Strategies <noreply@mail.nhealths.com>'
+      
+      console.log('🔵 [ADMIN] Enviando desde:', fromEmail)
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  const emailUrl = `${siteUrl}/api/send-email`
-  
-  console.log('🔵 [ADMIN] URL completa:', emailUrl)
+      await resend.emails.send({
+        from: fromEmail,
+        to: process.env.ADMIN_EMAIL || 'gerencia@nhealths.com',
+        subject: `🎯 Nuevo Lead: ${company_name} - Puntuación: ${total_score}/100`,
+        html: adminEmailHtml,
+      })
 
-  const adminResponse = await fetch(emailUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      to: process.env.ADMIN_EMAIL || 'gerencia@nhealths.com',
-      subject: `🎯 Nuevo Lead: ${company_name} - Puntuación: ${total_score}/100`,
-      html: adminEmailHtml,
-      type: 'admin'
-    })
-  })
+      console.log('✅ [ADMIN] Email enviado exitosamente')
 
-  console.log('🔵 [ADMIN] Response status:', adminResponse.status)
-  console.log('🔵 [ADMIN] Response ok:', adminResponse.ok)
-  console.log('🔵 [ADMIN] Response headers:', JSON.stringify(Object.fromEntries(adminResponse.headers)))
-
-  const responseText = await adminResponse.text()
-  console.log('🔵 [ADMIN] Response text (primeros 500 chars):', responseText.substring(0, 500))
-
-  if (!responseText || responseText.trim() === '') {
-    console.error('❌ [ADMIN] Respuesta vacía del servidor')
-    throw new Error('Empty response from email service')
-  }
-
-  let adminResult
-  try {
-    adminResult = JSON.parse(responseText)
-    console.log('🔵 [ADMIN] Respuesta parseada:', adminResult)
-  } catch (parseError) {
-    console.error('❌ [ADMIN] No se pudo parsear JSON:', responseText)
-    console.error('❌ [ADMIN] Parse error:', parseError.message)
-    throw new Error(`Invalid JSON response from email service: ${responseText.substring(0, 100)}`)
-  }
-
-} catch (emailError) {
-  console.error('❌ [ADMIN] Error completo:', emailError.message)
-  console.error('❌ [ADMIN] Stack:', emailError.stack)
-  // No fallar el request si el email falla
-}
+    } catch (emailError) {
+      console.error('❌ [ADMIN] Error enviando email:', emailError.message)
+      console.error('❌ [ADMIN] Stack:', emailError.stack)
+      // No fallar el request si el email falla
+    }
 
     // 📧 ENVIAR EMAIL AL PROSPECTO
     try {
+      console.log('🔵 [CLIENT] Enviando email al cliente:', company_email)
+      
       const clientEmailHtml = generateClientEmail({
         contact_name,
         company_name,
         total_score,
         assessment_id: data.id,
         scores,
-        recommendations: recommendations.slice(0, 3) // Solo las 3 principales
+        recommendations: recommendations.slice(0, 3)
       })
 
-      await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/send-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: company_email,
-          subject: `Tu Evaluación de Mercado LATAM - ${company_name}`,
-          html: clientEmailHtml,
-          type: 'client'
-        })
+      const fromEmail = process.env.FROM_EMAIL || 'NexusHealth Strategies <noreply@mail.nhealths.com>'
+
+      await resend.emails.send({
+        from: fromEmail,
+        to: company_email,
+        subject: `Tu Evaluación de Mercado LATAM - ${company_name}`,
+        html: clientEmailHtml,
       })
+
+      console.log('✅ [CLIENT] Email enviado exitosamente')
+
     } catch (emailError) {
-      console.error('Error sending client email:', emailError)
+      console.error('❌ [CLIENT] Error enviando email:', emailError.message)
+      // No fallar el request si el email falla
     }
 
     return NextResponse.json({
@@ -235,16 +213,17 @@ function generateAdminEmail(data) {
   console.log('📝 [generateAdminEmail] Generando HTML para:', company_name)
 
   const resultsUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/results/${assessment_id}`
+  
   // Determinar nivel de preparación
   let preparacionNivel = ''
   let preparacionColor = '#00D4AA'
-  if (data.total_score >= 80) {
+  if (total_score >= 80) {
     preparacionNivel = '🚀 Alta Preparación'
     preparacionColor = '#27AE60'
-  } else if (data.total_score >= 60) {
+  } else if (total_score >= 60) {
     preparacionNivel = '✅ Buena Preparación'
     preparacionColor = '#00D4AA'
-  } else if (data.total_score >= 40) {
+  } else if (total_score >= 40) {
     preparacionNivel = '⚠️ Preparación Moderada'
     preparacionColor = '#F5A623'
   } else {
@@ -264,7 +243,7 @@ function generateAdminEmail(data) {
     elsalvador: 'El Salvador',
     guatemala: 'Guatemala'
   }
-  const mercadosTexto = data.selected_markets?.map(m => marketNames[m] || m).join(', ') || 'No especificado'
+  const mercadosTexto = selected_markets?.map(m => marketNames[m] || m).join(', ') || 'No especificado'
   
   return `
     <!DOCTYPE html>
@@ -418,35 +397,35 @@ function generateAdminEmail(data) {
         
         <div class="content">
           <div class="score-banner">
-            <div class="score-number">${data.total_score}<span style="font-size: 24px; opacity: 0.7;">/100</span></div>
+            <div class="score-number">${total_score}<span style="font-size: 24px; opacity: 0.7;">/100</span></div>
             <div class="score-label">${preparacionNivel}</div>
           </div>
 
           <div class="info-section">
             <div class="info-row">
               <span class="label">🏢 Empresa</span>
-              <span class="value">${data.company_name}</span>
+              <span class="value">${company_name}</span>
             </div>
             
             <div class="info-row">
               <span class="label">👤 Contacto</span>
-              <span class="value">${data.contact_name} - ${data.contact_position}</span>
+              <span class="value">${contact_name} - ${contact_position}</span>
             </div>
             
             <div class="info-row">
               <span class="label">📧 Email</span>
-              <span class="value"><a href="mailto:${data.company_email}" style="color: #00D4AA; text-decoration: none;">${data.company_email}</a></span>
+              <span class="value"><a href="mailto:${company_email}" style="color: #00D4AA; text-decoration: none;">${company_email}</a></span>
             </div>
             
             <div class="info-row">
               <span class="label">📱 Teléfono</span>
-              <span class="value"><a href="tel:${data.contact_phone}" style="color: #00D4AA; text-decoration: none;">${data.contact_phone}</a></span>
+              <span class="value"><a href="tel:${contact_phone}" style="color: #00D4AA; text-decoration: none;">${contact_phone}</a></span>
             </div>
             
-            ${data.company_website ? `
+            ${company_website ? `
             <div class="info-row">
               <span class="label">🌐 Sitio Web</span>
-              <span class="value"><a href="${data.company_website}" target="_blank" style="color: #00D4AA; text-decoration: none;">${data.company_website}</a></span>
+              <span class="value"><a href="${company_website}" target="_blank" style="color: #00D4AA; text-decoration: none;">${company_website}</a></span>
             </div>
             ` : ''}
             
@@ -460,23 +439,23 @@ function generateAdminEmail(data) {
             <h3>📊 Desglose por Dimensión</h3>
             <div class="dimension-item">
               <span class="dimension-name">Perfil Empresarial</span>
-              <span class="dimension-score">${data.scores.company}%</span>
+              <span class="dimension-score">${scores.company}%</span>
             </div>
             <div class="dimension-item">
               <span class="dimension-name">Tipo de Producto</span>
-              <span class="dimension-score">${data.scores.product}%</span>
+              <span class="dimension-score">${scores.product}%</span>
             </div>
             <div class="dimension-item">
               <span class="dimension-name">Prep. Regulatoria</span>
-              <span class="dimension-score">${data.scores.regulatory}%</span>
+              <span class="dimension-score">${scores.regulatory}%</span>
             </div>
             <div class="dimension-item">
               <span class="dimension-name">Capacidad Técnica</span>
-              <span class="dimension-score">${data.scores.technical}%</span>
+              <span class="dimension-score">${scores.technical}%</span>
             </div>
             <div class="dimension-item">
               <span class="dimension-name">Cap. Comercial</span>
-              <span class="dimension-score">${data.scores.commercial}%</span>
+              <span class="dimension-score">${scores.commercial}%</span>
             </div>
           </div>
           
@@ -494,7 +473,7 @@ function generateAdminEmail(data) {
         </div>
 
         <div class="footer">
-          <p><strong>nNexusHealth Strategies</strong> - Conectando innovación con oportunidades</p>
+          <p><strong>NexusHealth Strategies</strong> - Conectando innovación con oportunidades</p>
           <p>www.nhealths.com</p>
         </div>
       </div>
@@ -776,7 +755,7 @@ function generateClientEmail(data) {
 
           <div class="cta-box">
             <h3>¿Necesitas ayuda personalizada?</h3>
-            <p>Nuestro equipo en Nexus health Strategies puede ayudarte a desarrollar una estrategia específica para tu entrada al mercado latinoamericano.</p>
+            <p>Nuestro equipo en Nexus Health Strategies puede ayudarte a desarrollar una estrategia específica para tu entrada al mercado latinoamericano.</p>
             <a href="mailto:gerencia@nhealths.com" class="contact-link">📧 gerencia@nhealths.com</a>
           </div>
         </div>
