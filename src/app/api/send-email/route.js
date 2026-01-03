@@ -26,8 +26,8 @@ export async function POST(request) {
       )
     }
 
-    const fromEmail = 'NexusHealth Strategies <gerencia@nhealths.com>'
-
+    const fromEmail = 'NexusHealth Strategies <noreply@mail.nhealths.com>'
+    const fromEmail = process.env.FROM_EMAIL || 'NexusHealth Strategies <noreply@mail.nhealths.com>'
     console.log('📤 Enviando desde:', fromEmail)
 
     const data = await resend.emails.send({
