@@ -175,3 +175,4 @@ MIT License - Desarrollado por Clinix
 ## 🤝 Soporte
 
 Para consultas sobre la herramienta o servicios de consultoría para entrada al mercado latinoamericano, contacta a [tu-email@clinix.com]
+# Fix email
