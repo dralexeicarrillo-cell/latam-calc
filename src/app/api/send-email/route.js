@@ -26,7 +26,6 @@ export async function POST(request) {
       )
     }
 
-    const fromEmail = 'NexusHealth Strategies <noreply@mail.nhealths.com>'
     const fromEmail = process.env.FROM_EMAIL || 'NexusHealth Strategies <noreply@mail.nhealths.com>'
     console.log('📤 Enviando desde:', fromEmail)
 
