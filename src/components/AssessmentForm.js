@@ -3,6 +3,18 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
+  Building2, 
+  Package, 
+  FileCheck, 
+  ServerCog, 
+  Briefcase, 
+  Globe2,
+  ChevronRight, 
+  ChevronLeft,
+  Loader2,
+  CheckCircle2
+} from 'lucide-react'
+import { 
   calculateAllScores, 
   calculateMarketFit, 
   generateRecommendations 
@@ -16,6 +28,7 @@ export default function AssessmentForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState({})
   
+  // --- MANTENEMOS TU ESTADO ORIGINAL ---
   const [responses, setResponses] = useState({
     // Section 1 - Company Profile & Contact Info
     companyName: '',
@@ -52,12 +65,10 @@ export default function AssessmentForm() {
     multiCountry: 5,
   })
 
+  // --- TUS FUNCIONES DE LÓGICA (INTACTAS) ---
   const updateResponse = (key, value) => {
     setResponses(prev => ({ ...prev, [key]: value }))
-    // Limpiar error del campo cuando el usuario empieza a escribir
-    if (errors[key]) {
-      setErrors(prev => ({ ...prev, [key]: '' }))
-    }
+    if (errors[key]) setErrors(prev => ({ ...prev, [key]: '' }))
   }
 
   const toggleArrayValue = (key, value) => {
@@ -66,7 +77,6 @@ export default function AssessmentForm() {
       if (current.includes(value)) {
         return { ...prev, [key]: current.filter(v => v !== value) }
       } else {
-        // Limit markets to 3
         if (key === 'selectedMarkets' && current.length >= 3) {
           alert('Por favor selecciona máximo 3 mercados prioritarios.')
           return prev
@@ -76,31 +86,17 @@ export default function AssessmentForm() {
     })
   }
 
-  // Validación de campos obligatorios en Sección 1
   const validateSection1 = () => {
     const newErrors = {}
-    
-    if (!responses.companyName.trim()) {
-      newErrors.companyName = 'El nombre de la empresa es obligatorio'
-    }
-    
-    if (!responses.contactName.trim()) {
-      newErrors.contactName = 'El nombre de contacto es obligatorio'
-    }
-    
+    if (!responses.companyName.trim()) newErrors.companyName = 'El nombre de la empresa es obligatorio'
+    if (!responses.contactName.trim()) newErrors.contactName = 'El nombre de contacto es obligatorio'
     if (!responses.companyEmail.trim()) {
       newErrors.companyEmail = 'El email es obligatorio'
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(responses.companyEmail)) {
       newErrors.companyEmail = 'Por favor ingresa un email válido'
     }
-    
-    if (!responses.contactPhone.trim()) {
-      newErrors.contactPhone = 'El teléfono es obligatorio'
-    }
-    
-    if (!responses.contactPosition.trim()) {
-      newErrors.contactPosition = 'El cargo es obligatorio'
-    }
+    if (!responses.contactPhone.trim()) newErrors.contactPhone = 'El teléfono es obligatorio'
+    if (!responses.contactPosition.trim()) newErrors.contactPosition = 'El cargo es obligatorio'
     
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -109,12 +105,10 @@ export default function AssessmentForm() {
   const progress = ((currentSection - 1) / TOTAL_SECTIONS) * 100
 
   const nextSection = () => {
-    // Validar sección 1 antes de avanzar
     if (currentSection === 1 && !validateSection1()) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
-    
     if (currentSection < TOTAL_SECTIONS) {
       setCurrentSection(prev => prev + 1)
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -130,14 +124,11 @@ export default function AssessmentForm() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
-
     try {
-      // Calculate scores
       const { scores, totalScore } = calculateAllScores(responses)
       const marketFit = calculateMarketFit(scores, totalScore, responses.selectedMarkets)
       const recommendations = generateRecommendations(scores)
 
-      // Submit to API (incluyendo datos de contacto)
       const res = await fetch('/api/assessments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -162,7 +153,6 @@ export default function AssessmentForm() {
       if (data.success && data.id) {
         router.push(`/results/${data.id}`)
       } else {
-        // If no database, still show results in URL with encoded data
         const encodedData = btoa(JSON.stringify({
           companyName: responses.companyName,
           contactName: responses.contactName,
@@ -181,213 +171,207 @@ export default function AssessmentForm() {
     }
   }
 
+  // --- RENDERIZADO CON NUEVO DISEÑO ---
   return (
-    <div className="container">
-      {/* Progress Bar */}
-      <div className="progress-bar">
-        <div className="progress-fill" style={{ width: `${progress}%` }} />
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      
+      {/* Barra de Progreso */}
+      <div className="mb-8">
+        <div className="flex justify-between text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+          <span>Progreso</span>
+          <span>{Math.round(progress)}%</span>
+        </div>
+        <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-[#F7941D] transition-all duration-500 ease-out" 
+            style={{ width: `${progress}%` }} 
+          />
+        </div>
       </div>
 
-      {/* Step Indicator */}
-      <div className="step-indicator">
+      {/* Indicador de Pasos (Dots) */}
+      <div className="flex justify-center gap-2 mb-10">
         {Array.from({ length: TOTAL_SECTIONS }, (_, i) => (
           <div
             key={i}
-            className={`step-dot ${i + 1 === currentSection ? 'active' : ''} ${i + 1 < currentSection ? 'completed' : ''}`}
+            className={`w-3 h-3 rounded-full transition-all duration-300 ${
+              i + 1 === currentSection ? 'bg-[#1A1F2C] scale-125' : 
+              i + 1 < currentSection ? 'bg-[#F7941D]' : 'bg-slate-200'
+            }`}
           />
         ))}
       </div>
 
-      {/* Section 1: Company Profile & Contact */}
+      {/* --- SECCIONES --- */}
+      
+      {/* Section 1 */}
       {currentSection === 1 && (
         <Section
-          icon="🏢"
+          icon={<Building2 className="text-white" size={24} />}
           title="Información de tu Empresa"
-          subtitle="Comencemos conociendo tu organización"
+          subtitle="Comencemos conociendo tu organización."
         >
-          <div className="info-box">
-            <p>📧 <strong>¿Por qué pedimos tus datos?</strong></p>
-            <p>Necesitamos tu información para enviarte un reporte personalizado y poder contactarte con recomendaciones específicas para tu entrada al mercado LATAM.</p>
+          <div className="bg-blue-50 border-l-4 border-[#1A1F2C] p-4 rounded-r-lg mb-8">
+            <p className="text-sm text-slate-700">
+              <span className="font-bold block mb-1">🔒 Confidencialidad</span>
+              Tus datos se usan únicamente para generar tu reporte personalizado de entrada al mercado.
+            </p>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Nombre de la empresa *</label>
-            <input
-              type="text"
-              className={`form-input ${errors.companyName ? 'error' : ''}`}
-              placeholder="Ej: HealthTech Solutions Inc."
-              value={responses.companyName}
-              onChange={(e) => updateResponse('companyName', e.target.value)}
-            />
-            {errors.companyName && <span className="error-message">{errors.companyName}</span>}
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Tu nombre completo *</label>
-              <input
-                type="text"
-                className={`form-input ${errors.contactName ? 'error' : ''}`}
-                placeholder="Ej: María González"
-                value={responses.contactName}
-                onChange={(e) => updateResponse('contactName', e.target.value)}
-              />
-              {errors.contactName && <span className="error-message">{errors.contactName}</span>}
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputGroup label="Nombre de la empresa" required error={errors.companyName}>
+                <input
+                  type="text"
+                  className="w-full p-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1A1F2C] focus:border-transparent outline-none transition-all"
+                  placeholder="Ej: HealthTech Solutions Inc."
+                  value={responses.companyName}
+                  onChange={(e) => updateResponse('companyName', e.target.value)}
+                />
+              </InputGroup>
+              
+              <InputGroup label="Sitio Web" optional>
+                <input
+                  type="url"
+                  className="w-full p-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1A1F2C] outline-none"
+                  placeholder="https://..."
+                  value={responses.companyWebsite}
+                  onChange={(e) => updateResponse('companyWebsite', e.target.value)}
+                />
+              </InputGroup>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Tu cargo/posición *</label>
-              <input
-                type="text"
-                className={`form-input ${errors.contactPosition ? 'error' : ''}`}
-                placeholder="Ej: CEO, Director Comercial"
-                value={responses.contactPosition}
-                onChange={(e) => updateResponse('contactPosition', e.target.value)}
-              />
-              {errors.contactPosition && <span className="error-message">{errors.contactPosition}</span>}
-            </div>
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <InputGroup label="Tu nombre completo" required error={errors.contactName}>
+                <input
+                  type="text"
+                  className="w-full p-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1A1F2C] outline-none"
+                  value={responses.contactName}
+                  onChange={(e) => updateResponse('contactName', e.target.value)}
+                />
+              </InputGroup>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Email corporativo *</label>
+              <InputGroup label="Cargo / Posición" required error={errors.contactPosition}>
+                <input
+                  type="text"
+                  className="w-full p-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1A1F2C] outline-none"
+                  value={responses.contactPosition}
+                  onChange={(e) => updateResponse('contactPosition', e.target.value)}
+                />
+              </InputGroup>
+
+              <InputGroup label="Teléfono" required error={errors.contactPhone}>
+                <input
+                  type="tel"
+                  className="w-full p-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1A1F2C] outline-none"
+                  value={responses.contactPhone}
+                  onChange={(e) => updateResponse('contactPhone', e.target.value)}
+                />
+              </InputGroup>
+            </div>
+
+            <InputGroup label="Email corporativo" required error={errors.companyEmail}>
               <input
                 type="email"
-                className={`form-input ${errors.companyEmail ? 'error' : ''}`}
-                placeholder="correo@empresa.com"
+                className="w-full p-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1A1F2C] outline-none"
+                placeholder="nombre@empresa.com"
                 value={responses.companyEmail}
                 onChange={(e) => updateResponse('companyEmail', e.target.value)}
               />
-              {errors.companyEmail && <span className="error-message">{errors.companyEmail}</span>}
+            </InputGroup>
+
+            <div className="pt-6 border-t border-slate-100">
+              <label className="block text-sm font-bold text-slate-700 mb-3">¿Cuál es el tamaño de tu empresa?</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                   { value: 'startup', label: 'Startup', sub: '1-10' },
+                   { value: 'small', label: 'Pequeña', sub: '11-50' },
+                   { value: 'medium', label: 'Mediana', sub: '51-250' },
+                   { value: 'large', label: 'Grande', sub: '250+' },
+                ].map(opt => (
+                  <SelectableCard
+                    key={opt.value}
+                    selected={responses.companySize === opt.value}
+                    onClick={() => updateResponse('companySize', opt.value)}
+                    label={opt.label}
+                    sub={opt.sub}
+                  />
+                ))}
+              </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Teléfono de contacto *</label>
-              <input
-                type="tel"
-                className={`form-input ${errors.contactPhone ? 'error' : ''}`}
-                placeholder="+1 (555) 123-4567"
-                value={responses.contactPhone}
-                onChange={(e) => updateResponse('contactPhone', e.target.value)}
+            <div className="space-y-4">
+              <label className="block text-sm font-bold text-slate-700">Años de experiencia en salud: <span className="text-[#F7941D] text-lg ml-2">{responses.experience} años</span></label>
+              <input 
+                type="range" min="0" max="20" 
+                value={responses.experience} 
+                onChange={(e) => updateResponse('experience', parseInt(e.target.value))}
+                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#1A1F2C]"
               />
-              {errors.contactPhone && <span className="error-message">{errors.contactPhone}</span>}
             </div>
+
+             {/* Nuevos campos de Sede y Latam */}
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                   <label className="block text-sm font-bold text-slate-700 mb-2">Sede Principal</label>
+                   <select
+                      className="w-full p-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1A1F2C] outline-none"
+                      value={responses.headquarters}
+                      onChange={(e) => updateResponse('headquarters', e.target.value)}
+                   >
+                      <option value="">Seleccionar...</option>
+                      <option value="latam">América Latina</option>
+                      <option value="usa">Estados Unidos</option>
+                      <option value="europe">Europa</option>
+                      <option value="asia">Asia</option>
+                      <option value="other">Otra</option>
+                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Experiencia previa en LATAM</label>
+                  <select
+                      className="w-full p-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1A1F2C] outline-none"
+                      value={responses.latamExp}
+                      onChange={(e) => updateResponse('latamExp', e.target.value)}
+                   >
+                      <option value="">Seleccionar...</option>
+                      <option value="none">No, nunca</option>
+                      <option value="some">Sí, 1-2 países</option>
+                      <option value="extensive">Sí, 3+ países</option>
+                   </select>
+                </div>
+             </div>
+
           </div>
-
-          <div className="form-group">
-            <label className="form-label">Sitio web de la empresa (opcional)</label>
-            <input
-              type="url"
-              className="form-input"
-              placeholder="https://www.empresa.com"
-              value={responses.companyWebsite}
-              onChange={(e) => updateResponse('companyWebsite', e.target.value)}
-            />
-          </div>
-
-          <hr style={{ margin: '2rem 0', border: 'none', borderTop: '2px solid var(--border)' }} />
-
-          <div className="form-group">
-            <label className="form-label">¿Cuál es el tamaño de tu empresa?</label>
-            <div className="radio-group">
-              {[
-                { value: 'startup', label: 'Startup', sub: '1-10 empleados' },
-                { value: 'small', label: 'Pequeña', sub: '11-50 empleados' },
-                { value: 'medium', label: 'Mediana', sub: '51-250 empleados' },
-                { value: 'large', label: 'Grande', sub: '250+ empleados' },
-              ].map(opt => (
-                <RadioOption
-                  key={opt.value}
-                  name="companySize"
-                  value={opt.value}
-                  checked={responses.companySize === opt.value}
-                  onChange={() => updateResponse('companySize', opt.value)}
-                  label={opt.label}
-                  sublabel={opt.sub}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">¿Cuántos años de experiencia tiene tu empresa en el sector salud?</label>
-            <SliderInput
-              value={responses.experience}
-              onChange={(val) => updateResponse('experience', val)}
-              min={0}
-              max={20}
-              unit="años"
-              labels={['0 años', '10 años', '20+ años']}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">¿En qué región tiene su sede principal?</label>
-            <select
-              className="form-select"
-              value={responses.headquarters}
-              onChange={(e) => updateResponse('headquarters', e.target.value)}
-            >
-              <option value="">Selecciona una región...</option>
-              <option value="latam">América Latina</option>
-              <option value="usa">Estados Unidos</option>
-              <option value="europe">Europa</option>
-              <option value="asia">Asia</option>
-              <option value="other">Otra</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">¿Ha operado previamente en América Latina?</label>
-            <div className="radio-group">
-              {[
-                { value: 'none', label: 'No, nunca' },
-                { value: 'some', label: 'Sí, 1-2 países' },
-                { value: 'extensive', label: 'Sí, 3+ países' },
-              ].map(opt => (
-                <RadioOption
-                  key={opt.value}
-                  name="latamExp"
-                  value={opt.value}
-                  checked={responses.latamExp === opt.value}
-                  onChange={() => updateResponse('latamExp', opt.value)}
-                  label={opt.label}
-                />
-              ))}
-            </div>
-          </div>
-
           <NavButtons onNext={nextSection} showPrev={false} />
         </Section>
       )}
 
-      {/* Section 2: Product Type */}
+      {/* Section 2 */}
       {currentSection === 2 && (
         <Section
-          icon="📦"
-          title="Tipo de Producto o Servicio"
-          subtitle="Define tu oferta para el mercado"
+          icon={<Package className="text-white" size={24} />}
+          title="Producto o Servicio"
+          subtitle="Define qué vas a ofrecer al mercado."
         >
-          <div className="form-group">
-            <label className="form-label">¿Qué tipo de producto/servicio ofreces? (Selecciona todos los que apliquen)</label>
-            <div className="checkbox-group">
+          <div className="mb-6">
+            <label className="block text-sm font-bold text-slate-700 mb-4">Selecciona todos los que apliquen:</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {[
-                { value: 'software', label: 'Software de salud / SaaS' },
+                { value: 'software', label: 'Software / SaaS' },
                 { value: 'telemedicine', label: 'Telemedicina' },
                 { value: 'ehr', label: 'HCE / EMR' },
                 { value: 'ai', label: 'IA / Machine Learning' },
                 { value: 'devices', label: 'Dispositivos médicos' },
                 { value: 'pharma', label: 'Farmacéuticos' },
-                { value: 'cosmetics', label: 'Cosméticos / Cuidado personal' },
-                { value: 'supplements', label: 'Suplementos alimenticios' },
-                { value: 'wearables', label: 'Wearables / IoT médico' },
-                { value: 'consulting', label: 'Consultoría / Servicios' },
+                { value: 'wearables', label: 'Wearables / IoT' },
+                { value: 'consulting', label: 'Consultoría' },
               ].map(opt => (
-                <CheckboxOption
+                <SelectableCard
                   key={opt.value}
-                  value={opt.value}
-                  checked={responses.productTypes.includes(opt.value)}
-                  onChange={() => toggleArrayValue('productTypes', opt.value)}
+                  multi
+                  selected={responses.productTypes.includes(opt.value)}
+                  onClick={() => toggleArrayValue('productTypes', opt.value)}
                   label={opt.label}
                 />
               ))}
@@ -395,599 +379,327 @@ export default function AssessmentForm() {
           </div>
 
           {responses.productTypes.includes('devices') && (
-            <div className="form-group animate-fadeIn">
-              <label className="form-label">Si tienes dispositivos médicos, ¿cuál es su clasificación de riesgo?</label>
-              <div className="radio-group">
+            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6 animate-in fade-in slide-in-from-top-4">
+              <label className="block text-sm font-bold text-slate-700 mb-3">Clasificación de Riesgo (Dispositivos)</label>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 {[
-                  { value: '1', label: 'Clase I', sub: 'Bajo riesgo' },
-                  { value: '2', label: 'Clase II', sub: 'Riesgo moderado' },
-                  { value: '3', label: 'Clase III', sub: 'Alto riesgo' },
+                  { value: '1', label: 'Clase I', sub: 'Bajo' },
+                  { value: '2', label: 'Clase II', sub: 'Moderado' },
+                  { value: '3', label: 'Clase III', sub: 'Alto' },
                   { value: '4', label: 'Clase IV', sub: 'Crítico' },
                 ].map(opt => (
-                  <RadioOption
+                  <SelectableCard
                     key={opt.value}
-                    name="deviceClass"
-                    value={opt.value}
-                    checked={responses.deviceClass === opt.value}
-                    onChange={() => updateResponse('deviceClass', opt.value)}
+                    selected={responses.deviceClass === opt.value}
+                    onClick={() => updateResponse('deviceClass', opt.value)}
                     label={opt.label}
-                    sublabel={opt.sub}
+                    sub={opt.sub}
+                    small
                   />
                 ))}
               </div>
             </div>
           )}
 
-          <div className="form-group">
-            <label className="form-label">¿Tu producto/servicio procesa datos de salud de pacientes?</label>
-            <div className="radio-group">
-              {[
-                { value: 'no', label: 'No' },
-                { value: 'anonymized', label: 'Sí, anonimizados' },
-                { value: 'identified', label: 'Sí, identificables' },
-              ].map(opt => (
-                <RadioOption
-                  key={opt.value}
-                  name="healthData"
-                  value={opt.value}
-                  checked={responses.healthData === opt.value}
-                  onChange={() => updateResponse('healthData', opt.value)}
-                  label={opt.label}
-                />
-              ))}
-            </div>
+          <div>
+             <label className="block text-sm font-bold text-slate-700 mb-3">¿Procesas datos de salud?</label>
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <SelectableCard selected={responses.healthData === 'no'} onClick={() => updateResponse('healthData', 'no')} label="No" />
+                <SelectableCard selected={responses.healthData === 'anonymized'} onClick={() => updateResponse('healthData', 'anonymized')} label="Sí, Anonimizados" />
+                <SelectableCard selected={responses.healthData === 'identified'} onClick={() => updateResponse('healthData', 'identified')} label="Sí, Identificables" />
+             </div>
           </div>
 
           <NavButtons onPrev={prevSection} onNext={nextSection} />
         </Section>
       )}
 
-      {/* Section 3: Regulatory Preparation */}
+      {/* Section 3: Regulatory */}
       {currentSection === 3 && (
         <Section
-          icon="📋"
+          icon={<FileCheck className="text-white" size={24} />}
           title="Preparación Regulatoria"
-          subtitle="Evalúa tu cumplimiento normativo actual"
+          subtitle="Cumplimiento normativo y certificaciones."
         >
-          <div className="form-group">
-            <label className="form-label">¿Tienes certificaciones o aprobaciones regulatorias actuales?</label>
-            <div className="checkbox-group">
-              {[
-                { value: 'fda', label: 'FDA (EE.UU.)' },
-                { value: 'ce', label: 'Marcado CE (Europa)' },
-                { value: 'iso13485', label: 'ISO 13485' },
-                { value: 'iso27001', label: 'ISO 27001' },
-                { value: 'hipaa', label: 'HIPAA Compliance' },
-                { value: 'gdpr', label: 'GDPR Compliance' },
-                { value: 'gmp', label: 'BPM / GMP' },
-                { value: 'none', label: 'Ninguna actualmente' },
-              ].map(opt => (
-                <CheckboxOption
-                  key={opt.value}
-                  value={opt.value}
-                  checked={responses.certifications.includes(opt.value)}
-                  onChange={() => toggleArrayValue('certifications', opt.value)}
-                  label={opt.label}
-                />
-              ))}
-            </div>
+          <div className="mb-8">
+             <label className="block text-sm font-bold text-slate-700 mb-4">Certificaciones Actuales</label>
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {['fda', 'ce', 'iso13485', 'iso27001', 'hipaa', 'gdpr'].map(val => (
+                   <SelectableCard 
+                      key={val} multi 
+                      selected={responses.certifications.includes(val)} 
+                      onClick={() => toggleArrayValue('certifications', val)} 
+                      label={val.toUpperCase()} 
+                   />
+                ))}
+                <SelectableCard multi selected={responses.certifications.includes('none')} onClick={() => toggleArrayValue('certifications', 'none')} label="Ninguna" />
+             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">¿Cuentas con un Certificado de Libre Venta (CLV) de tu país de origen?</label>
-            <div className="radio-group">
-              {[
-                { value: 'yes', label: 'Sí, actualizado' },
-                { value: 'process', label: 'En proceso' },
-                { value: 'no', label: 'No' },
-                { value: 'na', label: 'No aplica' },
-              ].map(opt => (
-                <RadioOption
-                  key={opt.value}
-                  name="clv"
-                  value={opt.value}
-                  checked={responses.clv === opt.value}
-                  onChange={() => updateResponse('clv', opt.value)}
-                  label={opt.label}
-                />
-              ))}
-            </div>
-          </div>
+          <div className="space-y-6">
+             <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">¿Certificado de Libre Venta (CLV)?</label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                   <SelectableCard selected={responses.clv === 'yes'} onClick={() => updateResponse('clv', 'yes')} label="Sí, actualizado" />
+                   <SelectableCard selected={responses.clv === 'process'} onClick={() => updateResponse('clv', 'process')} label="En proceso" />
+                   <SelectableCard selected={responses.clv === 'no'} onClick={() => updateResponse('clv', 'no')} label="No tengo" />
+                </div>
+             </div>
 
-          <div className="form-group">
-            <label className="form-label">¿Tu documentación técnica está disponible en español?</label>
-            <div className="radio-group">
-              {[
-                { value: 'full', label: 'Sí, completa' },
-                { value: 'partial', label: 'Parcialmente' },
-                { value: 'no', label: 'No' },
-              ].map(opt => (
-                <RadioOption
-                  key={opt.value}
-                  name="spanish"
-                  value={opt.value}
-                  checked={responses.spanish === opt.value}
-                  onChange={() => updateResponse('spanish', opt.value)}
-                  label={opt.label}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">¿Tienes implementado un sistema de farmacovigilancia o tecnovigilancia?</label>
-            <div className="radio-group">
-              {[
-                { value: 'full', label: 'Sí, robusto' },
-                { value: 'basic', label: 'Básico' },
-                { value: 'no', label: 'No' },
-                { value: 'na', label: 'No aplica' },
-              ].map(opt => (
-                <RadioOption
-                  key={opt.value}
-                  name="vigilance"
-                  value={opt.value}
-                  checked={responses.vigilance === opt.value}
-                  onChange={() => updateResponse('vigilance', opt.value)}
-                  label={opt.label}
-                />
-              ))}
-            </div>
+             <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Documentación Técnica en Español</label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                   <SelectableCard selected={responses.spanish === 'full'} onClick={() => updateResponse('spanish', 'full')} label="Sí, Completa" />
+                   <SelectableCard selected={responses.spanish === 'partial'} onClick={() => updateResponse('spanish', 'partial')} label="Parcialmente" />
+                   <SelectableCard selected={responses.spanish === 'no'} onClick={() => updateResponse('spanish', 'no')} label="No" />
+                </div>
+             </div>
           </div>
 
           <NavButtons onPrev={prevSection} onNext={nextSection} />
         </Section>
       )}
 
-      {/* Section 4: Technical Capacity */}
+      {/* Section 4: Technical */}
       {currentSection === 4 && (
         <Section
-          icon="⚙️"
+          icon={<ServerCog className="text-white" size={24} />}
           title="Capacidad Técnica"
-          subtitle="Evalúa tu infraestructura y estándares técnicos"
+          subtitle="Infraestructura e interoperabilidad."
         >
-          <div className="form-group">
-            <label className="form-label">Si ofreces software de salud, ¿qué estándares de interoperabilidad soportas?</label>
-            <div className="checkbox-group">
-              {[
-                { value: 'hl7fhir', label: 'HL7 FHIR' },
-                { value: 'hl7v2', label: 'HL7 v2.x' },
-                { value: 'dicom', label: 'DICOM' },
-                { value: 'icd10', label: 'ICD-10' },
-                { value: 'snomed', label: 'SNOMED CT' },
-                { value: 'loinc', label: 'LOINC' },
-                { value: 'api', label: 'API REST' },
-                { value: 'none', label: 'Ninguno / No aplica' },
-              ].map(opt => (
-                <CheckboxOption
-                  key={opt.value}
-                  value={opt.value}
-                  checked={responses.standards.includes(opt.value)}
-                  onChange={() => toggleArrayValue('standards', opt.value)}
-                  label={opt.label}
-                />
-              ))}
-            </div>
-          </div>
+           <div className="mb-6">
+              <label className="block text-sm font-bold text-slate-700 mb-3">Estándares Soportados</label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                 {[
+                    {v: 'hl7fhir', l: 'HL7 FHIR'}, {v: 'hl7v2', l: 'HL7 v2.x'}, {v: 'dicom', l: 'DICOM'},
+                    {v: 'icd10', l: 'ICD-10'}, {v: 'api', l: 'API REST'}, {v: 'none', l: 'Ninguno'}
+                 ].map(opt => (
+                    <SelectableCard key={opt.v} multi selected={responses.standards.includes(opt.v)} onClick={() => toggleArrayValue('standards', opt.v)} label={opt.l} />
+                 ))}
+              </div>
+           </div>
 
-          <div className="form-group">
-            <label className="form-label">¿Tu infraestructura tecnológica puede alojar datos en la región?</label>
-            <div className="radio-group">
-              {[
-                { value: 'latam', label: 'Sí, en LATAM' },
-                { value: 'usa', label: 'Solo en EE.UU.' },
-                { value: 'europe', label: 'Solo en Europa' },
-                { value: 'flexible', label: 'Flexible / Multi-región' },
-              ].map(opt => (
-                <RadioOption
-                  key={opt.value}
-                  name="dataResidency"
-                  value={opt.value}
-                  checked={responses.dataResidency === opt.value}
-                  onChange={() => updateResponse('dataResidency', opt.value)}
-                  label={opt.label}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">¿Tienes capacidad de soporte técnico en español?</label>
-            <div className="radio-group">
-              {[
-                { value: '24-7', label: 'Sí, 24/7' },
-                { value: 'business', label: 'Horario laboral' },
-                { value: 'limited', label: 'Limitado' },
-                { value: 'no', label: 'No' },
-              ].map(opt => (
-                <RadioOption
-                  key={opt.value}
-                  name="support"
-                  value={opt.value}
-                  checked={responses.support === opt.value}
-                  onChange={() => updateResponse('support', opt.value)}
-                  label={opt.label}
-                />
-              ))}
-            </div>
-          </div>
+           <div className="space-y-6">
+              <div>
+                 <label className="block text-sm font-bold text-slate-700 mb-2">Alojamiento de Datos (Residencia)</label>
+                 <select className="w-full p-3 bg-white border border-slate-200 rounded-lg outline-none" value={responses.dataResidency} onChange={(e) => updateResponse('dataResidency', e.target.value)}>
+                    <option value="">Seleccionar...</option>
+                    <option value="latam">Sí, servidores en LATAM</option>
+                    <option value="usa">Solo EE.UU.</option>
+                    <option value="europe">Solo Europa</option>
+                    <option value="flexible">Flexible / Cloud Agnostic</option>
+                 </select>
+              </div>
+              
+              <div>
+                 <label className="block text-sm font-bold text-slate-700 mb-2">Soporte Técnico en Español</label>
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <SelectableCard selected={responses.support === '24-7'} onClick={() => updateResponse('support', '24-7')} label="24/7" />
+                    <SelectableCard selected={responses.support === 'business'} onClick={() => updateResponse('support', 'business')} label="Horario Laboral" />
+                    <SelectableCard selected={responses.support === 'no'} onClick={() => updateResponse('support', 'no')} label="No disponible" />
+                 </div>
+              </div>
+           </div>
 
           <NavButtons onPrev={prevSection} onNext={nextSection} />
         </Section>
       )}
 
-      {/* Section 5: Commercial Capacity */}
+      {/* Section 5: Commercial */}
       {currentSection === 5 && (
         <Section
-          icon="💼"
-          title="Capacidad Comercial y Financiera"
-          subtitle="Evalúa tus recursos para la expansión"
+          icon={<Briefcase className="text-white" size={24} />}
+          title="Comercial y Financiero"
+          subtitle="Recursos para la expansión."
         >
-          <div className="form-group">
-            <label className="form-label">¿Cuál es tu presupuesto estimado para entrada al mercado (por país)?</label>
-            <div className="radio-group">
-              {[
-                { value: 'low', label: '< USD 50K' },
-                { value: 'medium', label: 'USD 50K - 200K' },
-                { value: 'high', label: 'USD 200K - 500K' },
-                { value: 'enterprise', label: '> USD 500K' },
-              ].map(opt => (
-                <RadioOption
-                  key={opt.value}
-                  name="budget"
-                  value={opt.value}
-                  checked={responses.budget === opt.value}
-                  onChange={() => updateResponse('budget', opt.value)}
-                  label={opt.label}
-                />
-              ))}
-            </div>
-          </div>
+           <div className="mb-6">
+              <label className="block text-sm font-bold text-slate-700 mb-3">Segmentos Objetivo</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                 {[
+                    { v: 'public', l: 'Sector Público / Gobierno' },
+                    { v: 'private_hospitals', l: 'Hospitales Privados' },
+                    { v: 'insurers', l: 'Aseguradoras' },
+                    { v: 'b2c', l: 'Pacientes Directos (B2C)' }
+                 ].map(opt => (
+                    <SelectableCard key={opt.v} multi selected={responses.segments.includes(opt.v)} onClick={() => toggleArrayValue('segments', opt.v)} label={opt.l} />
+                 ))}
+              </div>
+           </div>
 
-          <div className="form-group">
-            <label className="form-label">¿Tienes o estás dispuesto a establecer una entidad legal local?</label>
-            <div className="radio-group">
-              {[
-                { value: 'yes', label: 'Sí, tenemos' },
-                { value: 'willing', label: 'Dispuesto a crear' },
-                { value: 'distributor', label: 'Prefiero distribuidor' },
-                { value: 'no', label: 'No es posible' },
-              ].map(opt => (
-                <RadioOption
-                  key={opt.value}
-                  name="entity"
-                  value={opt.value}
-                  checked={responses.entity === opt.value}
-                  onChange={() => updateResponse('entity', opt.value)}
-                  label={opt.label}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">¿A qué segmentos de mercado te diriges? (Selecciona todos)</label>
-            <div className="checkbox-group">
-              {[
-                { value: 'public', label: 'Sector público / Gobierno' },
-                { value: 'private_hospitals', label: 'Hospitales privados' },
-                { value: 'clinics', label: 'Clínicas / Consultorios' },
-                { value: 'insurers', label: 'Aseguradoras' },
-                { value: 'pharma', label: 'Farmacéuticas' },
-                { value: 'b2c', label: 'Consumidor final (B2C)' },
-              ].map(opt => (
-                <CheckboxOption
-                  key={opt.value}
-                  value={opt.value}
-                  checked={responses.segments.includes(opt.value)}
-                  onChange={() => toggleArrayValue('segments', opt.value)}
-                  label={opt.label}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">¿Tienes experiencia participando en licitaciones públicas?</label>
-            <div className="radio-group">
-              {[
-                { value: 'extensive', label: 'Sí, amplia' },
-                { value: 'some', label: 'Algo de experiencia' },
-                { value: 'no', label: 'No' },
-              ].map(opt => (
-                <RadioOption
-                  key={opt.value}
-                  name="procurement"
-                  value={opt.value}
-                  checked={responses.procurement === opt.value}
-                  onChange={() => updateResponse('procurement', opt.value)}
-                  label={opt.label}
-                />
-              ))}
-            </div>
-          </div>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                 <label className="block text-sm font-bold text-slate-700 mb-2">Presupuesto Go-to-Market</label>
+                 <select className="w-full p-3 bg-white border border-slate-200 rounded-lg outline-none" value={responses.budget} onChange={(e) => updateResponse('budget', e.target.value)}>
+                    <option value="">Seleccionar rango...</option>
+                    <option value="low">Menos de $50k</option>
+                    <option value="medium">$50k - $200k</option>
+                    <option value="high">$200k - $500k</option>
+                    <option value="enterprise">Más de $500k</option>
+                 </select>
+              </div>
+              <div>
+                 <label className="block text-sm font-bold text-slate-700 mb-2">Entidad Legal Local</label>
+                 <select className="w-full p-3 bg-white border border-slate-200 rounded-lg outline-none" value={responses.entity} onChange={(e) => updateResponse('entity', e.target.value)}>
+                    <option value="">Seleccionar...</option>
+                    <option value="yes">Ya tenemos entidad</option>
+                    <option value="willing">Dispuesto a crearla</option>
+                    <option value="distributor">Prefiero distribuidor</option>
+                 </select>
+              </div>
+           </div>
 
           <NavButtons onPrev={prevSection} onNext={nextSection} />
         </Section>
       )}
 
-      {/* Section 6: Target Markets */}
+      {/* Section 6: Markets */}
       {currentSection === 6 && (
         <Section
-          icon="🌎"
+          icon={<Globe2 className="text-white" size={24} />}
           title="Mercados Objetivo"
-          subtitle="Define tus prioridades geográficas"
+          subtitle="Selecciona tus prioridades (Máximo 3)."
         >
-          <div className="form-group">
-            <label className="form-label">¿Qué mercados te interesan prioritariamente? (Selecciona hasta 3)</label>
-            <div className="checkbox-group">
-              {[
-                { value: 'mexico', label: '🇲🇽 México' },
-                { value: 'colombia', label: '🇨🇴 Colombia' },
-                { value: 'costarica', label: '🇨🇷 Costa Rica' },
-                { value: 'panama', label: '🇵🇦 Panamá' },
-                { value: 'peru', label: '🇵🇪 Perú' },
-                { value: 'ecuador', label: '🇪🇨 Ecuador' },
-                { value: 'dominicana', label: '🇩🇴 Rep. Dominicana' },
-                { value: 'elsalvador', label: '🇸🇻 El Salvador' },
-                { value: 'guatemala', label: '🇬🇹 Guatemala' },
-              ].map(opt => (
-                <CheckboxOption
-                  key={opt.value}
-                  value={opt.value}
-                  checked={responses.selectedMarkets.includes(opt.value)}
-                  onChange={() => toggleArrayValue('selectedMarkets', opt.value)}
-                  label={opt.label}
-                />
-              ))}
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+            {[
+              { value: 'mexico', label: '🇲🇽 México' },
+              { value: 'colombia', label: '🇨🇴 Colombia' },
+              { value: 'costarica', label: '🇨🇷 Costa Rica' },
+              { value: 'panama', label: '🇵🇦 Panamá' },
+              { value: 'peru', label: '🇵🇪 Perú' },
+              { value: 'ecuador', label: '🇪🇨 Ecuador' },
+              { value: 'dominicana', label: '🇩🇴 Rep. Dom.' },
+              { value: 'elsalvador', label: '🇸🇻 El Salvador' },
+              { value: 'guatemala', label: '🇬🇹 Guatemala' },
+            ].map(opt => (
+              <SelectableCard
+                key={opt.value}
+                multi
+                selected={responses.selectedMarkets.includes(opt.value)}
+                onClick={() => toggleArrayValue('selectedMarkets', opt.value)}
+                label={opt.label}
+                className="text-center justify-center"
+              />
+            ))}
           </div>
 
-          <div className="form-group">
-            <label className="form-label">¿Cuál es tu horizonte temporal para la entrada al mercado?</label>
-            <div className="radio-group">
-              {[
-                { value: 'immediate', label: 'Inmediato', sub: '0-6 meses' },
-                { value: 'short', label: 'Corto plazo', sub: '6-12 meses' },
-                { value: 'medium', label: 'Mediano plazo', sub: '1-2 años' },
-                { value: 'long', label: 'Largo plazo', sub: '2+ años' },
-              ].map(opt => (
-                <RadioOption
-                  key={opt.value}
-                  name="timeline"
-                  value={opt.value}
-                  checked={responses.timeline === opt.value}
-                  onChange={() => updateResponse('timeline', opt.value)}
-                  label={opt.label}
-                  sublabel={opt.sub}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">¿Qué tan crítico es para ti tener operaciones en múltiples países simultáneamente?</label>
-            <SliderInput
-              value={responses.multiCountry}
-              onChange={(val) => updateResponse('multiCountry', val)}
-              min={1}
-              max={10}
-              unit="/ 10"
-              labels={['Un país a la vez', 'Muy importante']}
-            />
+          <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-8">
+             <label className="block text-sm font-bold text-slate-700 mb-3">Horizonte Temporal</label>
+             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <SelectableCard selected={responses.timeline === 'immediate'} onClick={() => updateResponse('timeline', 'immediate')} label="Inmediato" sub="< 6 meses" small />
+                <SelectableCard selected={responses.timeline === 'short'} onClick={() => updateResponse('timeline', 'short')} label="Corto Plazo" sub="6-12 meses" small />
+                <SelectableCard selected={responses.timeline === 'medium'} onClick={() => updateResponse('timeline', 'medium')} label="Medio" sub="1-2 años" small />
+                <SelectableCard selected={responses.timeline === 'long'} onClick={() => updateResponse('timeline', 'long')} label="Largo" sub="2+ años" small />
+             </div>
           </div>
 
           <button
-            className="btn btn-accent"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            style={{ width: '100%', padding: '1.25rem', fontSize: '1.1rem', marginTop: '1rem' }}
+            className="w-full py-4 bg-[#F7941D] text-white rounded-xl font-bold text-lg hover:bg-[#d47c12] hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? '⏳ Procesando tu evaluación...' : '🔍 Calcular mi Panorama de Mercado'}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="animate-spin" /> Procesando...
+              </>
+            ) : (
+              <>Calcular mi Panorama <ChevronRight /></>
+            )}
           </button>
-
-          <div style={{ marginTop: '1rem' }}>
-            <button 
-              className="btn btn-secondary" 
-              onClick={prevSection}
-              style={{ width: '100%' }}
-            >
-              ← Anterior
-            </button>
+          
+          <div className="mt-4 text-center">
+             <button onClick={prevSection} className="text-slate-500 hover:text-[#1A1F2C] text-sm font-medium">Volver atrás</button>
           </div>
+
         </Section>
       )}
-
-      <style jsx>{`
-        .container {
-          max-width: 900px;
-          margin: 0 auto;
-          padding: 2rem;
-        }
-
-        .form-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1rem;
-        }
-
-        @media (max-width: 768px) {
-          .form-row {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        .form-input.error {
-          border-color: var(--danger);
-        }
-
-        .error-message {
-          color: var(--danger);
-          font-size: 0.85rem;
-          margin-top: 0.25rem;
-          display: block;
-        }
-
-        .info-box {
-          background: linear-gradient(135deg, rgba(0, 212, 170, 0.08) 0%, rgba(0, 184, 148, 0.05) 100%);
-          border-left: 4px solid var(--accent);
-          padding: 1rem 1.25rem;
-          border-radius: 8px;
-          margin-bottom: 1.5rem;
-        }
-
-        .info-box p {
-          margin: 0.5rem 0;
-          font-size: 0.9rem;
-          color: var(--text-primary);
-        }
-
-        .info-box p:first-child {
-          margin-top: 0;
-          font-weight: 600;
-        }
-      `}</style>
     </div>
   )
 }
 
-// Sub-components
+// --- SUB-COMPONENTES ESTILIZADOS ---
+
 function Section({ icon, title, subtitle, children }) {
   return (
-    <div className="card animate-fadeIn">
-      <div className="section-header">
-        <div className="section-icon">{icon}</div>
+    <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="bg-[#1A1F2C] p-6 md:p-8 text-white flex items-center gap-4">
+        <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm">
+          {icon}
+        </div>
         <div>
-          <h2 className="section-title">{title}</h2>
-          <p className="section-subtitle">{subtitle}</p>
+          <h2 className="font-serif text-2xl font-bold">{title}</h2>
+          <p className="text-slate-300 text-sm">{subtitle}</p>
         </div>
       </div>
-      {children}
-
-      <style jsx>{`
-        .section-header {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          margin-bottom: 1.5rem;
-          padding-bottom: 1rem;
-          border-bottom: 2px solid var(--border);
-        }
-
-        .section-icon {
-          width: 48px;
-          height: 48px;
-          background: var(--gradient-accent);
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.5rem;
-        }
-
-        .section-title {
-          font-family: 'Fraunces', serif;
-          font-size: 1.4rem;
-          color: var(--primary);
-          margin: 0;
-        }
-
-        .section-subtitle {
-          color: var(--text-secondary);
-          font-size: 0.9rem;
-          margin: 0;
-        }
-      `}</style>
+      <div className="p-6 md:p-8">
+        {children}
+      </div>
     </div>
   )
 }
 
-function RadioOption({ name, value, checked, onChange, label, sublabel }) {
+function InputGroup({ label, required, optional, error, children }) {
   return (
-    <div className="radio-option">
-      <input
-        type="radio"
-        name={name}
-        id={`${name}-${value}`}
-        value={value}
-        checked={checked}
-        onChange={onChange}
-      />
-      <label htmlFor={`${name}-${value}`}>
-        {label}
-        {sublabel && <><br /><small>{sublabel}</small></>}
+    <div className="flex flex-col gap-1">
+      <label className="text-sm font-bold text-slate-700 ml-1">
+        {label} 
+        {required && <span className="text-[#F7941D] ml-1">*</span>}
+        {optional && <span className="text-slate-400 font-normal ml-1">(Opcional)</span>}
       </label>
+      {children}
+      {error && <span className="text-red-500 text-xs ml-1 mt-1">{error}</span>}
     </div>
   )
 }
 
-function CheckboxOption({ value, checked, onChange, label }) {
+function SelectableCard({ selected, onClick, label, sub, multi, small, className = '' }) {
   return (
-    <div className="checkbox-option">
-      <input
-        type="checkbox"
-        id={`check-${value}`}
-        value={value}
-        checked={checked}
-        onChange={onChange}
-      />
-      <label htmlFor={`check-${value}`}>{label}</label>
-    </div>
-  )
-}
-
-function SliderInput({ value, onChange, min, max, unit, labels }) {
-  return (
-    <div className="slider-container">
-      <div className="slider-value">
-        <span>{value}</span> <span>{unit}</span>
+    <div 
+      onClick={onClick}
+      className={`
+        cursor-pointer rounded-xl border-2 transition-all duration-200 flex items-center gap-3 relative
+        ${small ? 'p-3' : 'p-4'}
+        ${selected 
+          ? 'border-[#F7941D] bg-orange-50 text-[#1A1F2C]' 
+          : 'border-slate-100 hover:border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+        }
+        ${className}
+      `}
+    >
+      <div className={`
+        flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition-colors
+        ${selected ? 'border-[#F7941D] bg-[#F7941D]' : 'border-slate-300'}
+      `}>
+         {selected && <CheckCircle2 size={14} className="text-white" />}
       </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        value={value}
-        onChange={(e) => onChange(parseInt(e.target.value))}
-      />
-      <div className="slider-labels">
-        {labels.map((label, i) => (
-          <span key={i}>{label}</span>
-        ))}
+      
+      <div className="flex flex-col">
+        <span className={`font-medium ${small ? 'text-xs' : 'text-sm'}`}>{label}</span>
+        {sub && <span className="text-xs opacity-70">{sub}</span>}
       </div>
     </div>
   )
 }
 
-function NavButtons({ onPrev, onNext, showPrev = true }) {
+function NavButtons({ onNext, onPrev, showPrev = true }) {
   return (
-    <div className="nav-buttons">
+    <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-100">
       {showPrev ? (
-        <button className="btn btn-secondary" onClick={onPrev}>
-          ← Anterior
+        <button 
+          onClick={onPrev}
+          className="flex items-center gap-2 px-6 py-3 text-slate-600 hover:text-[#1A1F2C] hover:bg-slate-100 rounded-lg transition-colors font-medium"
+        >
+          <ChevronLeft size={20} /> Anterior
         </button>
-      ) : (
-        <div />
-      )}
+      ) : <div />}
+      
       {onNext && (
-        <button className="btn btn-primary" onClick={onNext}>
-          Siguiente →
+        <button 
+          onClick={onNext}
+          className="flex items-center gap-2 px-8 py-3 bg-[#1A1F2C] text-white rounded-lg hover:bg-[#262262] shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all font-bold"
+        >
+          Siguiente <ChevronRight size={20} />
         </button>
       )}
-
-      <style jsx>{`
-        .nav-buttons {
-          display: flex;
-          justify-content: space-between;
-          gap: 1rem;
-          margin-top: 2rem;
-        }
-
-        @media (max-width: 640px) {
-          .nav-buttons {
-            flex-direction: column;
-          }
-        }
-      `}</style>
     </div>
   )
 }
