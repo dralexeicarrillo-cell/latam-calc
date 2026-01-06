@@ -1,5 +1,7 @@
 'use client'
-
+import PhoneInput from 'react-phone-number-input'
+import 'react-phone-number-input/style.css' // Por si acaso el import global falla
+import es from 'react-phone-number-input/locale/es' // Para nombres de países en español
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
@@ -28,7 +30,6 @@ export default function AssessmentForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState({})
   
-  // --- MANTENEMOS TU ESTADO ORIGINAL ---
   const [responses, setResponses] = useState({
     // Section 1 - Company Profile & Contact Info
     companyName: '',
@@ -65,7 +66,7 @@ export default function AssessmentForm() {
     multiCountry: 5,
   })
 
-  // --- TUS FUNCIONES DE LÓGICA (INTACTAS) ---
+  // --- FUNCIONES DE LÓGICA ---
   const updateResponse = (key, value) => {
     setResponses(prev => ({ ...prev, [key]: value }))
     if (errors[key]) setErrors(prev => ({ ...prev, [key]: '' }))
@@ -171,7 +172,6 @@ export default function AssessmentForm() {
     }
   }
 
-  // --- RENDERIZADO CON NUEVO DISEÑO ---
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       
@@ -261,15 +261,20 @@ export default function AssessmentForm() {
               </InputGroup>
 
               <InputGroup label="Teléfono" required error={errors.contactPhone}>
-                <input
-                  type="tel"
-                  className="w-full p-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1A1F2C] outline-none"
-                  value={responses.contactPhone}
-                  onChange={(e) => updateResponse('contactPhone', e.target.value)}
-                />
-              </InputGroup>
-            </div>
-
+  <div className="border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-[#1A1F2C] bg-white">
+    <PhoneInput
+      placeholder="Ej: 8888-8888"
+      value={responses.contactPhone}
+      onChange={(value) => updateResponse('contactPhone', value)}
+      defaultCountry="CR"
+      labels={es}
+      className="px-3 py-2 outline-none w-full"
+      international
+      countryCallingCodeEditable={false}
+    />
+  </div>
+</InputGroup>
+</div>
             <InputGroup label="Email corporativo" required error={errors.companyEmail}>
               <input
                 type="email"
@@ -310,36 +315,35 @@ export default function AssessmentForm() {
               />
             </div>
 
-             {/* Nuevos campos de Sede y Latam */}
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                   <label className="block text-sm font-bold text-slate-700 mb-2">Sede Principal</label>
-                   <select
-                      className="w-full p-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1A1F2C] outline-none"
-                      value={responses.headquarters}
-                      onChange={(e) => updateResponse('headquarters', e.target.value)}
-                   >
-                      <option value="">Seleccionar...</option>
-                      <option value="latam">América Latina</option>
-                      <option value="usa">Estados Unidos</option>
-                      <option value="europe">Europa</option>
-                      <option value="asia">Asia</option>
-                      <option value="other">Otra</option>
-                   </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Experiencia previa en LATAM</label>
+               <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Sede Principal</label>
                   <select
-                      className="w-full p-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1A1F2C] outline-none"
-                      value={responses.latamExp}
-                      onChange={(e) => updateResponse('latamExp', e.target.value)}
-                   >
-                      <option value="">Seleccionar...</option>
-                      <option value="none">No, nunca</option>
-                      <option value="some">Sí, 1-2 países</option>
-                      <option value="extensive">Sí, 3+ países</option>
-                   </select>
-                </div>
+                     className="w-full p-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1A1F2C] outline-none"
+                     value={responses.headquarters}
+                     onChange={(e) => updateResponse('headquarters', e.target.value)}
+                  >
+                     <option value="">Seleccionar...</option>
+                     <option value="latam">América Latina</option>
+                     <option value="usa">Estados Unidos</option>
+                     <option value="europe">Europa</option>
+                     <option value="asia">Asia</option>
+                     <option value="other">Otra</option>
+                  </select>
+               </div>
+               <div>
+                 <label className="block text-sm font-bold text-slate-700 mb-2">Experiencia previa en LATAM</label>
+                 <select
+                     className="w-full p-3 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1A1F2C] outline-none"
+                     value={responses.latamExp}
+                     onChange={(e) => updateResponse('latamExp', e.target.value)}
+                  >
+                     <option value="">Seleccionar...</option>
+                     <option value="none">No, nunca</option>
+                     <option value="some">Sí, 1-2 países</option>
+                     <option value="extensive">Sí, 3+ países</option>
+                  </select>
+               </div>
              </div>
 
           </div>
@@ -436,24 +440,72 @@ export default function AssessmentForm() {
              </div>
           </div>
 
-          <div className="space-y-6">
-             <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">¿Certificado de Libre Venta (CLV)?</label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                   <SelectableCard selected={responses.clv === 'yes'} onClick={() => updateResponse('clv', 'yes')} label="Sí, actualizado" />
-                   <SelectableCard selected={responses.clv === 'process'} onClick={() => updateResponse('clv', 'process')} label="En proceso" />
-                   <SelectableCard selected={responses.clv === 'no'} onClick={() => updateResponse('clv', 'no')} label="No tengo" />
-                </div>
-             </div>
+          <div className="space-y-8">
+            {/* ESTRUCTURA LEGAL */}
+            <div>
+               <label className="block text-sm font-bold text-slate-700 mb-2">¿Cuál es su estructura legal en el país destino?</label>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <SelectableCard 
+                      selected={responses.legal_entity === 'subsidiary'} 
+                      onClick={() => updateResponse('legal_entity', 'subsidiary')} 
+                      label="Subsidiaria propia" 
+                  />
+                  <SelectableCard 
+                      selected={responses.legal_entity === 'distributor'} 
+                      onClick={() => updateResponse('legal_entity', 'distributor')} 
+                      label="A través de distribuidor" 
+                  />
+                  <SelectableCard 
+                      selected={responses.legal_entity === 'none'} 
+                      onClick={() => updateResponse('legal_entity', 'none')} 
+                      label="Ninguna (Exportación directa)" 
+                  />
+                  {/* NUEVA OPCIÓN */}
+                  <SelectableCard 
+                      selected={responses.legal_entity === 'na'} 
+                      onClick={() => updateResponse('legal_entity', 'na')} 
+                      label="No aplica (Servicios/Otro)" 
+                  />
+               </div>
+            </div>
 
-             <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Documentación Técnica en Español</label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                   <SelectableCard selected={responses.spanish === 'full'} onClick={() => updateResponse('spanish', 'full')} label="Sí, Completa" />
-                   <SelectableCard selected={responses.spanish === 'partial'} onClick={() => updateResponse('spanish', 'partial')} label="Parcialmente" />
-                   <SelectableCard selected={responses.spanish === 'no'} onClick={() => updateResponse('spanish', 'no')} label="No" />
+            {/* CERTIFICADO DE LIBRE VENTA (CLV) - AGREGADO DE NUEVO */}
+            <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">¿Cuenta con Certificado de Libre Venta (CLV)?</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                   <SelectableCard 
+                      selected={responses.clv === 'yes'} 
+                      onClick={() => updateResponse('clv', 'yes')} 
+                      label="Sí, vigente y apostillado" 
+                   />
+                   <SelectableCard 
+                      selected={responses.clv === 'process'} 
+                      onClick={() => updateResponse('clv', 'process')} 
+                      label="En proceso" 
+                   />
+                   <SelectableCard 
+                      selected={responses.clv === 'no'} 
+                      onClick={() => updateResponse('clv', 'no')} 
+                      label="No tengo" 
+                   />
+                   {/* NUEVA OPCIÓN */}
+                   <SelectableCard 
+                      selected={responses.clv === 'na'} 
+                      onClick={() => updateResponse('clv', 'na')} 
+                      label="No aplica (Producto exento)" 
+                   />
                 </div>
-             </div>
+            </div>
+
+            {/* DOCUMENTACIÓN TÉCNICA */}
+            <div>
+               <label className="block text-sm font-bold text-slate-700 mb-2">Documentación Técnica en Español</label>
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <SelectableCard selected={responses.spanish === 'full'} onClick={() => updateResponse('spanish', 'full')} label="Sí, Completa" />
+                  <SelectableCard selected={responses.spanish === 'partial'} onClick={() => updateResponse('spanish', 'partial')} label="Parcialmente" />
+                  <SelectableCard selected={responses.spanish === 'no'} onClick={() => updateResponse('spanish', 'no')} label="No" />
+               </div>
+            </div>
           </div>
 
           <NavButtons onPrev={prevSection} onNext={nextSection} />
@@ -553,34 +605,48 @@ export default function AssessmentForm() {
       )}
 
       {/* Section 6: Markets */}
-      {currentSection === 6 && (
-        <Section
-          icon={<Globe2 className="text-white" size={24} />}
-          title="Mercados Objetivo"
-          subtitle="Selecciona tus prioridades (Máximo 3)."
-        >
+{currentSection === 6 && (
+  <Section
+    icon={<Globe2 className="text-white" size={24} />}
+    title="Mercados Objetivo"
+    subtitle="Selecciona tus prioridades (Máximo 3)."
+  >
+    {/* Reemplaza el bloque de markets anterior con este */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
             {[
-              { value: 'mexico', label: '🇲🇽 México' },
-              { value: 'colombia', label: '🇨🇴 Colombia' },
-              { value: 'costarica', label: '🇨🇷 Costa Rica' },
-              { value: 'panama', label: '🇵🇦 Panamá' },
-              { value: 'peru', label: '🇵🇪 Perú' },
-              { value: 'ecuador', label: '🇪🇨 Ecuador' },
-              { value: 'dominicana', label: '🇩🇴 Rep. Dom.' },
-              { value: 'elsalvador', label: '🇸🇻 El Salvador' },
-              { value: 'guatemala', label: '🇬🇹 Guatemala' },
+              { value: 'mexico', label: 'México', code: 'mx' },
+              { value: 'colombia', label: 'Colombia', code: 'co' },
+              { value: 'costarica', label: 'Costa Rica', code: 'cr' },
+              { value: 'panama', label: 'Panamá', code: 'pa' },
+              { value: 'peru', label: 'Perú', code: 'pe' },
+              { value: 'ecuador', label: 'Ecuador', code: 'ec' },
+              { value: 'dominicana', label: 'Rep. Dom.', code: 'do' },
+              { value: 'elsalvador', label: 'El Salvador', code: 'sv' },
+              { value: 'guatemala', label: 'Guatemala', code: 'gt' },
             ].map(opt => (
               <SelectableCard
                 key={opt.value}
                 multi
                 selected={responses.selectedMarkets.includes(opt.value)}
                 onClick={() => toggleArrayValue('selectedMarkets', opt.value)}
-                label={opt.label}
-                className="text-center justify-center"
+                label={
+                  <div className="flex items-center justify-center gap-2">
+                    <img 
+                      src={`https://flagcdn.com/w40/${opt.code}.png`} 
+                      srcSet={`https://flagcdn.com/w80/${opt.code}.png 2x`}
+                      width="24" 
+                      height="18" 
+                      alt={opt.label} 
+                      className="rounded-sm shadow-sm object-cover"
+                    />
+                    <span>{opt.label}</span>
+                  </div>
+                }
+                className="text-center justify-center h-full"
               />
             ))}
           </div>
+
 
           <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-8">
              <label className="block text-sm font-bold text-slate-700 mb-3">Horizonte Temporal</label>

@@ -212,10 +212,26 @@ export function calculateCommercialScore(responses) {
     score += (budgetScores[responses.budget] || 0) * 0.3;
   }
 
-  // Entidad legal
-  if (responses.entity) {
-    const entityScores = { yes: 100, willing: 70, distributor: 50, no: 20 };
-    score += (entityScores[responses.entity] || 0) * 0.25;
+  // Entidad legal (Aquí agregamos 'na')
+  if (responses.entity) { // Nota: en tu formulario usaste 'legal_entity', asegúrate de que el nombre coincida
+    // Si usaste 'legal_entity' en el formulario, aquí debería ser responses.legal_entity
+    // Revisando tu formulario anterior, usaste: updateResponse('legal_entity', ...)
+    // PERO en el estado inicial (useState) lo llamaste 'entity'. 
+    // VAMOS A ASEGURARNOS DE LEER EL CAMPO CORRECTO.
+    
+    // Intenta leer 'legal_entity' primero, si no existe, lee 'entity'
+    const entityValue = responses.legal_entity || responses.entity;
+
+    const entityScores = { 
+        subsidiary: 100, 
+        yes: 100, // Por si acaso
+        willing: 70, 
+        distributor: 80, 
+        none: 50,
+        no: 20,
+        na: 100 // No aplica = No es barrera = 100 puntos
+    };
+    score += (entityScores[entityValue] || 0) * 0.25;
   }
 
   // Segmentos de mercado

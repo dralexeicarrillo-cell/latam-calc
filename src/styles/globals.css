@@ -1,3 +1,4 @@
+@import 'react-phone-number-input/style.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -33,4 +34,21 @@ h1, h2, h3, h4, h5, h6 {
 
 .animate-in {
   animation: fadeIn 0.5s ease-out forwards;
+}
+/* Estilos para el selector de teléfono */
+.PhoneInput {
+  display: flex;
+  align-items: center;
+}
+.PhoneInputCountry {
+  margin-right: 0.5rem;
+  padding-right: 0.5rem;
+  border-right: 1px solid #e2e8f0;
+}
+.PhoneInputInput {
+  outline: none;
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  color: #334155;
 }
